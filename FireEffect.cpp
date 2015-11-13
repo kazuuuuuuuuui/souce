@@ -19,15 +19,15 @@ glm::mat4 BillboardMatrix;
 
 class Fire{
 public:
-	glm::vec3 position;
-	float scale;
-	float alpha;
-	void draw();
-	void update();
+	glm::vec3 m_position;
+	float m_scale;
+	float m_alpha;
+	void Draw();
+	void Update();
 	Fire(){};
 };
 
-void Fire::draw(){
+void Fire::Draw(){
 	glPushMatrix();
 	BillboardMatrix = glm::inverse(viewMatrix);
 	BillboardMatrix[3][0] = 0;
@@ -55,7 +55,7 @@ void Fire::draw(){
 	glPopMatrix();
 }
 
-void Fire::update(){
+void Fire::Update(){
 	alpha -= 1.f / NUMBER;
 	scale += 3.f / NUMBER;
 	position.y += 0.1f;
