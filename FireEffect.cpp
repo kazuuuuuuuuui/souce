@@ -1,6 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 
-#define NUMBER (20)
+#define ParticleNumber (20)
 
 #include<stdio.h>
 #include<assert.h>
@@ -36,12 +36,12 @@ void Fire::Draw(){
 
 	//ビルボード行列適用
 	glMultMatrixf((GLfloat*)&BillboardMatrix);
-	glTranslatef(position.x, position.y, position.z);
-	glScalef(scale / 2, scale, scale / 2);
+	glTranslatef(m_position.x, m_position.y, m_position.z);
+	glScalef(m_scale / 2, m_scale, m_scale / 2);
 
 	glBegin(GL_QUADS);
 	{
-		glColor4f(1, 0.5, 0.25, alpha);
+		glColor4f(1, 0.5, 0.25, m_alpha);
 		glTexCoord2f(0.f, 0.f);
 		glVertex2f(-1.f, -1.f);
 		glTexCoord2f(0.f, 1.f);
@@ -56,20 +56,18 @@ void Fire::Draw(){
 }
 
 void Fire::Update(){
-	alpha -= 1.f / NUMBER;
-	scale += 3.f / NUMBER;
-	position.y += 0.1f;
+	m_alpha -= 1.f / ParticleNumber;
+	m_scale += 3.f / ParticleNumber;
+	m_position.y += 0.1f;
 
-	if (alpha < 0.f){
-		alpha = 1.f;
-		scale = 0.f;
-		position = { 0.f, 0.1f, 0.f };
+	if (m_alpha < 0.f){
+		m_alpha = 1.f;
+		m_scale = 0.f;
+		m_position = { 0.f, 0.1f, 0.f };
 	}
 }
 
-Fire fire[NUMBER];
-
-GLuint textures;
+Fire *fire[ParticleNumber];
 
 //透過度無し
 class RGB{
@@ -117,7 +115,7 @@ void loadImage(char *_Filename){
 		);
 	fclose(pBinMapFile);
 
-
+	//RとB反転
 	for (int i = 0; i < bmpInfoHeader.biWidth * bmpInfoHeader.biHeight; i++){
 		unsigned char tmp;
 		tmp = pixels[i].r;
@@ -140,64 +138,26 @@ void loadImage(char *_Filename){
 		pixelsData[i].a = pixels[i].r;
 	}
 
-	glGenTextures(
-		1,        //GLsizei n
-		&textures);//GLuint *textures
-
-	////pixcel
-	//glBindTexture(
-	//	GL_TEXTURE_2D,//GLenum target
-	//	textures[0]//GLuint texture
-	//	);
-
-	//glTexImage2D(
-	//	GL_TEXTURE_2D,   //GLenum target
-	//	0,               //GLint level
-	//	GL_RGB,          //GLint internalformat(生成するテクスチャのフォーマット)
-	//	bmpInfoHeader.biWidth,               //GLsizei width
-	//	bmpInfoHeader.biHeight,               //GLsizei height
-	//	0,               //GLint border
-	//	GL_RGB,          //GLenum format(ピクセルデータのフォーマット)
-	//	GL_UNSIGNED_BYTE,//GLenum type
-	//	pixels          //const GLvoid *pixels
-	//	);
-
-	//glTexParameteri(
-	//	GL_TEXTURE_2D,          // GLenum target
-	//	GL_TEXTURE_MIN_FILTER,  // GLenum pname
-	//	GL_NEAREST);            // GLint param
-
-	//glTexParameteri(
-	//	GL_TEXTURE_2D,          // GLenum target
-	//	GL_TEXTURE_MAG_FILTER,  // GLenum pname
-	//	GL_NEAREST);
-
-	//pixceldata
-	glBindTexture(
-		GL_TEXTURE_2D,//GLenum target
-		textures//GLuint texture
-		);
-
 	glTexImage2D(
-		GL_TEXTURE_2D,   //GLenum target
-		0,               //GLint level
-		GL_RGBA,          //GLint internalformat(生成するテクスチャのフォーマット)
-		bmpInfoHeader.biWidth,               //GLsizei width
-		bmpInfoHeader.biHeight,               //GLsizei height
-		0,               //GLint border
-		GL_RGBA,          //GLenum format(ピクセルデータのフォーマット)
-		GL_UNSIGNED_BYTE,//GLenum type
-		pixelsData          //const GLvoid *pixels
+		GL_TEXTURE_2D,   
+		0,               
+		GL_RGBA,          
+		bmpInfoHeader.biWidth,
+		bmpInfoHeader.biHeight, 
+		0,               
+		GL_RGBA,          
+		GL_UNSIGNED_BYTE,
+		pixelsData   
 		);
 
 	glTexParameteri(
-		GL_TEXTURE_2D,          // GLenum target
-		GL_TEXTURE_MIN_FILTER,  // GLenum pname
-		GL_NEAREST);            // GLint param
+		GL_TEXTURE_2D,          
+		GL_TEXTURE_MIN_FILTER,  
+		GL_NEAREST);            
 
 	glTexParameteri(
-		GL_TEXTURE_2D,          // GLenum target
-		GL_TEXTURE_MAG_FILTER,  // GLenum pname
+		GL_TEXTURE_2D,          
+		GL_TEXTURE_MAG_FILTER, 
 		GL_NEAREST);
 
 	free(pixels);
@@ -205,8 +165,8 @@ void loadImage(char *_Filename){
 }
 
 void timer(int value){
-	for (int i = 0; i < NUMBER; ++i){
-		fire[i].update();
+	for (int i = 0; i < ParticleNumber; ++i){
+		fire[i]->Update();
 	}
 
 	glutPostRedisplay();
@@ -229,7 +189,6 @@ void display(){
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-
 	static float angle = 0.f;
 	angle += 0.01;
 
@@ -239,7 +198,6 @@ void display(){
 		glm::vec3(0, 0, 0), //center
 		glm::vec3(0, 1, 0));//up
 
-	//先生に聞く
 	glMultMatrixf((GLfloat*)&viewMatrix);
 
 	//フィールド描画
@@ -247,11 +205,11 @@ void display(){
 	for (float i = -10; i <= 10; i++)
 	{
 		glColor3f(1, 0, 0);
-		glVertex3f(i, 0, -10);//(GLfloat x, GLfloat y, GLfloat z)
+		glVertex3f(i, 0, -10);
 		glVertex3f(i, 0, 10);
 
 		glColor3f(0, 1, 0);
-		glVertex3f(-10, 0, i);//(GLfloat x, GLfloat y, GLfloat z)
+		glVertex3f(-10, 0, i);
 		glVertex3f(10, 0, i);
 	}
 	glEnd();
@@ -259,19 +217,14 @@ void display(){
 	//ブレンド
 	glEnable(GL_BLEND);
 	glBlendFunc(
-		GL_SRC_ALPHA,   // GLenum sfactor
-		GL_ONE);        // GLenum dfactor
+		GL_SRC_ALPHA,  
+		GL_ONE);       
 
 	glEnable(GL_TEXTURE_2D);
 
-	glBindTexture(
-		GL_TEXTURE_2D,//GLenum target
-		textures//GLuint texture
-		);
-
 	//描画
-	for (int i = 0; i < NUMBER; i++){
-		fire[i].draw();
+	for (int i = 0; i < ParticleNumber; i++){
+		fire[i]->Draw();
 	}
 
 	glDisable(GL_TEXTURE_2D);
@@ -284,7 +237,7 @@ int main(int argc, char *argv[]){
 	glutInitWindowSize(900, 780);
 	glutCreateWindow("炎エフェクト");
 
-	glutDisplayFunc(display);//void (GLUTCALLBACK *func)(void)
+	glutDisplayFunc(display);
 
 	glutTimerFunc(
 		0,
@@ -292,10 +245,11 @@ int main(int argc, char *argv[]){
 		0);
 
 	//初期化
-	for (int i = 0; i < NUMBER; ++i){
-		fire[i].position = { 0, 0.2*i, 0 };
-		fire[i].scale = 3.f / NUMBER*i;
-		fire[i].alpha = 1.f - 1.f / NUMBER*i;
+	for (int i = 0; i < ParticleNumber; ++i){
+		fire[i] = new Fire();
+		fire[i]->m_position = { 0, 0.2*i, 0 };
+		fire[i]->m_scale = 3.f / ParticleNumber*i;
+		fire[i]->m_alpha = 1.f - 1.f / ParticleNumber*i;
 	}
 
 	loadImage("smoke.bmp");
