@@ -25,7 +25,17 @@ public:
 	void Draw();
 	void Update();
 	Fire(){};
+	~Fire();
 };
+
+Fire *fire[ParticleNumber];
+
+//デストラクタ
+Fire::~Fire(){
+	for (int i = 0; i < ParticleNumber; i++){
+		delete fire[i];
+	}
+}
 
 void Fire::Draw(){
 	glPushMatrix();
@@ -66,8 +76,6 @@ void Fire::Update(){
 		m_position = { 0.f, 0.1f, 0.f };
 	}
 }
-
-Fire *fire[ParticleNumber];
 
 //透過度無し
 class RGB{
@@ -139,25 +147,25 @@ void loadImage(char *_Filename){
 	}
 
 	glTexImage2D(
-		GL_TEXTURE_2D,   
-		0,               
-		GL_RGBA,          
+		GL_TEXTURE_2D,
+		0,
+		GL_RGBA,
 		bmpInfoHeader.biWidth,
-		bmpInfoHeader.biHeight, 
-		0,               
-		GL_RGBA,          
+		bmpInfoHeader.biHeight,
+		0,
+		GL_RGBA,
 		GL_UNSIGNED_BYTE,
-		pixelsData   
+		pixelsData
 		);
 
 	glTexParameteri(
-		GL_TEXTURE_2D,          
-		GL_TEXTURE_MIN_FILTER,  
-		GL_NEAREST);            
+		GL_TEXTURE_2D,
+		GL_TEXTURE_MIN_FILTER,
+		GL_NEAREST);
 
 	glTexParameteri(
-		GL_TEXTURE_2D,          
-		GL_TEXTURE_MAG_FILTER, 
+		GL_TEXTURE_2D,
+		GL_TEXTURE_MAG_FILTER,
 		GL_NEAREST);
 
 	free(pixels);
@@ -217,8 +225,8 @@ void display(){
 	//ブレンド
 	glEnable(GL_BLEND);
 	glBlendFunc(
-		GL_SRC_ALPHA,  
-		GL_ONE);       
+		GL_SRC_ALPHA,
+		GL_ONE);
 
 	glEnable(GL_TEXTURE_2D);
 
