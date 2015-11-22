@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
-#define ParticleNumber (20)
+#define PARTICLENUMBER (20)
+#define FEALDSIZE (10.f)
 
 #include<stdio.h>
 #include<assert.h>
@@ -24,18 +25,17 @@ public:
 	float m_alpha;
 	void Draw();
 	void Update();
-	Fire(){};
-	~Fire();
+	Fire(glm::vec3 _position, float _scale, float  _alpha);
 };
 
-Fire *fire[ParticleNumber];
+Fire *fire[PARTICLENUMBER];
 
-//デストラクタ
-Fire::~Fire(){
-	for (int i = 0; i < ParticleNumber; i++){
-		delete fire[i];
-	}
+Fire::Fire(glm::vec3 _position, float _scale, float  _alpha){
+	m_position = _position;
+	m_scale = _scale;
+	m_alpha = _alpha;
 }
+
 
 void Fire::Draw(){
 	glPushMatrix();
@@ -66,8 +66,8 @@ void Fire::Draw(){
 }
 
 void Fire::Update(){
-	m_alpha -= 1.f / ParticleNumber;
-	m_scale += 3.f / ParticleNumber;
+	m_alpha -= 1.f / PARTICLENUMBER;
+	m_scale += 3.f / PARTICLENUMBER;
 	m_position.y += 0.1f;
 
 	if (m_alpha < 0.f){
@@ -75,6 +75,21 @@ void Fire::Update(){
 		m_scale = 0.f;
 		m_position = { 0.f, 0.1f, 0.f };
 	}
+}
+
+void DrawFeald(float _FealdSize){
+	glBegin(GL_LINES);
+	for (float i = -_FealdSize; i <= _FealdSize; i++)
+	{
+		glColor3f(1, 0, 0);
+		glVertex3f(i, 0, -_FealdSize);
+		glVertex3f(i, 0, _FealdSize);
+
+		glColor3f(0, 1, 0);
+		glVertex3f(-_FealdSize, 0, i);
+		glVertex3f(_FealdSize, 0, i);
+	}
+	glEnd();
 }
 
 //透過度無し
@@ -173,10 +188,6 @@ void loadImage(char *_Filename){
 }
 
 void timer(int value){
-	for (int i = 0; i < ParticleNumber; ++i){
-		fire[i]->Update();
-	}
-
 	glutPostRedisplay();
 	glutTimerFunc(
 		1000 / 60,
@@ -185,6 +196,12 @@ void timer(int value){
 }
 
 void display(){
+	/*更新*/
+	for (int i = 0; i < PARTICLENUMBER; ++i){
+		fire[i]->Update();
+	}
+
+	/*描画*/
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glMatrixMode(GL_PROJECTION);
@@ -201,26 +218,16 @@ void display(){
 	angle += 0.01;
 
 	//ビュー行列
-	viewMatrix = glm::lookAt(
-		glm::vec3(7.f*cos(angle), 3, 7.f*sin(angle)),//eye
-		glm::vec3(0, 0, 0), //center
-		glm::vec3(0, 1, 0));//up
+	glm::vec3 eye = { 7.f*cos(angle), 3, 7.f*sin(angle) };
+	glm::vec3 center = { 0, 0, 0 };
+	glm::vec3 up = { 0, 1, 0 };
+
+	viewMatrix = glm::lookAt(eye, center, up);
 
 	glMultMatrixf((GLfloat*)&viewMatrix);
 
 	//フィールド描画
-	glBegin(GL_LINES);
-	for (float i = -10; i <= 10; i++)
-	{
-		glColor3f(1, 0, 0);
-		glVertex3f(i, 0, -10);
-		glVertex3f(i, 0, 10);
-
-		glColor3f(0, 1, 0);
-		glVertex3f(-10, 0, i);
-		glVertex3f(10, 0, i);
-	}
-	glEnd();
+	DrawFeald(FEALDSIZE);
 
 	//ブレンド
 	glEnable(GL_BLEND);
@@ -231,7 +238,7 @@ void display(){
 	glEnable(GL_TEXTURE_2D);
 
 	//描画
-	for (int i = 0; i < ParticleNumber; i++){
+	for (int i = 0; i < PARTICLENUMBER; i++){
 		fire[i]->Draw();
 	}
 
@@ -253,14 +260,19 @@ int main(int argc, char *argv[]){
 		0);
 
 	//初期化
-	for (int i = 0; i < ParticleNumber; ++i){
-		fire[i] = new Fire();
-		fire[i]->m_position = { 0, 0.2*i, 0 };
-		fire[i]->m_scale = 3.f / ParticleNumber*i;
-		fire[i]->m_alpha = 1.f - 1.f / ParticleNumber*i;
+	for (int i = 0; i < PARTICLENUMBER; ++i){
+		glm::vec3 position = { 0, 0.2*i, 0 };
+		float scale = 3.f / PARTICLENUMBER*i;
+		float alpha = 1.f - 1.f / PARTICLENUMBER*i;
+		fire[i] = new Fire(position, scale, alpha);
 	}
 
 	loadImage("smoke.bmp");
 
 	glutMainLoop();
+
+	//メモリの解放
+	for (int i = 0; i < PARTICLENUMBER; i++){
+		delete fire[i];
+	}
 }
